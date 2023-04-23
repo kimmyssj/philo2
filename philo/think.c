@@ -1,4 +1,4 @@
-/* ************************************************************************** */
+	/* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   think.c                                            :+:      :+:    :+:   */
@@ -6,37 +6,41 @@
 /*   By: seungjki <seungjki@student.42seoul.kr>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/03/24 09:11:34 by seungjki          #+#    #+#             */
-/*   Updated: 2023/04/20 16:00:29 by seungjki         ###   ########.fr       */
+/*   Updated: 2023/04/24 00:17:49 by seungjki         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philo.h"
+
+int	else_empty(t_human *hum, int flag)
+{
+	pthread_mutex_unlock(&hum->res->mutex);
+	pthread_mutex_lock(hum->res->mfork + hum->name);
+	pthread_mutex_lock(hum->res->mfork + hum->name - 1);
+	if (hum->res->forks[hum->name - 1] == 0 && flag == 0 && \
+		hum->res->forks[hum->name] == 0)
+		flag ++;
+	pthread_mutex_unlock(hum->res->mfork + hum->name - 1);
+	pthread_mutex_unlock(hum->res->mfork + hum->name);
+	return (flag);
+}
 
 int	is_fork_empty(t_human *hum, int flag)
 {
 	pthread_mutex_lock(&hum->res->mutex);
 	if (hum->name == hum->arr[number_of_philosophers])
 	{
-		if (hum->res->forks[0] == 0 && \
-			hum->res->forks[hum->name - 1] == 0 && flag == 0)
-		{
-			pthread_mutex_unlock(&hum->res->mutex);
+		pthread_mutex_unlock(&hum->res->mutex);
+		pthread_mutex_lock(hum->res->mfork);
+		pthread_mutex_lock(hum->res->mfork + hum->name - 1);
+		if (flag == 0 && hum->res->forks[0] == 0 && \
+			hum->res->forks[hum->name - 1] == 0)
 			flag ++;
-		}
-		else
-			pthread_mutex_unlock(&hum->res->mutex);
+		pthread_mutex_unlock(hum->res->mfork + hum->name - 1);
+		pthread_mutex_unlock(hum->res->mfork);
 	}
 	else
-	{
-		if (hum->res->forks[hum->name] == 0 && \
-			hum->res->forks[hum->name - 1] == 0 && flag == 0)
-		{
-			pthread_mutex_unlock(&hum->res->mutex);
-			flag ++;
-		}
-		else
-			pthread_mutex_unlock(&hum->res->mutex);
-	}
+		flag = else_empty(hum, flag);
 	return (flag);
 }
 
@@ -47,8 +51,7 @@ t_human	*think(t_human *hum, struct timeval *last_time)
 	flag = 0;
 	if (check_dead_or_ate(hum, last_time, thinking) == NULL)
 		return (NULL);
-	if (hum->name != hum->arr[number_of_philosophers])
-		usleep(1000);
+	usleep(1000);
 	while (flag == 0)
 	{
 		flag = is_fork_empty(hum, flag);
